@@ -1,0 +1,18 @@
+h1{
+  text-align: center;
+  color: white;
+}
+
+body{
+  background-color: #1c1c1c;
+}
+
+canvas{
+  align-items: : center;
+  background-color: #636363;
+}
+
+#start{
+  margin-left: 30%;
+  margin-right : 30%;
+}
