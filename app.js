@@ -1,16 +1,19 @@
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const startButton = document.getElementById('start');
+const turn_speed = 360; //Degrees of rotation per second
 
-canvas.width = 400;
-canvas.height = 300;
-canvas.border = 1px;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 const ship = {
+  //Ship position
   x: canvas.width / 2,
   y: canvas.height / 2,
   radius: 20,
-  angle: 90,
+  //Angle is defaulted to 90 (facing north). Angle is converted to radians
+  //for the trig functions to work.
+  angle: 90/180 * Math.PI,
   velocity: {
     x: 0,
     y: 0
@@ -19,22 +22,42 @@ const ship = {
   thrusting: false
 };
 
+function displayInstructions(){
+  context.font = '50px Times New Roman';
+  context.fillStyle = 'white';
+  context.textAlign = 'center';
+  context.fillText('Instructions', canvas.width/2, canvas.height/2 - 100);
+  context.font = '20px Calibri';
+  context.fillText('Use the arrow keys to rotate left and right. Use the up key to accelerate.', canvas.width/2, canvas.height/2);
+  context.fillText("Spacebar is used to shoot the ship's gun.", canvas.width/2, canvas.height/2 + 30);
+
+}
+
 function drawShip() {
+  context.strokeStyle = '#fafafa';
   context.beginPath();
-  context.moveTo(
-    ship.x + 4 / 3 * ship.radius * Math.cos(ship.angle),
-    ship.y - 4 / 3 * ship.radius * Math.sin(ship.angle)
+  context.moveTo(//ship's nose
+    ship.x + ship.radius * Math.cos(ship.angle),
+    ship.y - ship.radius * Math.sin(ship.angle)
   );
-  context.lineTo(
-    ship.x - ship.radius * (2 / 3 * Math.cos(ship.angle) + Math.sin(ship.angle)),
-    ship.y + ship.radius * (2 / 3 * Math.sin(ship.angle) - Math.cos(ship.angle))
+  context.lineTo(//drawing to bottom left of ship
+    ship.x - ship.radius * (Math.cos(ship.angle) + Math.sin(ship.angle)),
+    ship.y + ship.radius * (Math.sin(ship.angle) - Math.cos(ship.angle))
   );
-  context.lineTo(
-    ship.x - ship.radius * (2 / 3 * Math.cos(ship.angle) - Math.sin(ship.angle)),
-    ship.y + ship.radius * (2 / 3 * Math.sin(ship.angle) + Math.cos(ship.angle))
+  context.lineTo(//drawing to bottom right
+    ship.x - ship.radius * (Math.cos(ship.angle) - Math.sin(ship.angle)),
+    ship.y + ship.radius * (Math.sin(ship.angle) + Math.cos(ship.angle))
   );
-  context.closePath();
+  context.closePath(); //drawing back to the nose
   context.stroke();
+
+  //rotate the ship
+  ship.angle += ship.rotation / 180 * Math.PI;
+  ship.rotation = 0;
+  //move ship
+  if(ship.thrusting){
+    
+  }
 }
 
 function clearCanvas() {
@@ -43,11 +66,37 @@ function clearCanvas() {
 }
 
 function update() {
+  clearCanvas();
   drawShip();
 }
 
+function gameControls(){
+  document.addEventListener('keydown', () => {
+    switch (event.key) {
+      case "ArrowUp":
+        //ship.y = ;
+        //ship.x = ;
+        break;
+      case "ArrowLeft":
+      ship.rotation += 5;
+        break;
+      case "ArrowRight":
+      ship.rotation -= 5;
+        break;
+      case " ":
+      console.log("Shoot");
+        break;
+      default:
+        return;
+    }
+  })
+}
+
 function startGame(){
+  gameControls();
   setInterval(update, 1000 / 60);
 }
 
-startButton.addEventListener('click', startGame);
+//displayInstructions();
+//startButton.addEventListener('click', startGame);
+startGame();
