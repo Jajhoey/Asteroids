@@ -28,7 +28,7 @@ function displayInstructions(){
   context.textAlign = 'center';
   context.fillText('Instructions', canvas.width/2, canvas.height/2 - 100);
   context.font = '20px Calibri';
-  context.fillText('Use the arrow keys to rotate left and right. Use the up key to accelerate.', canvas.width/2, canvas.height/2);
+  context.fillText('Use the arrow keys to rotate left and right. Use the up key to activate thrusters.', canvas.width/2, canvas.height/2);
   context.fillText("Spacebar is used to shoot the ship's gun.", canvas.width/2, canvas.height/2 + 30);
 
 }
@@ -56,7 +56,8 @@ function drawShip() {
   ship.rotation = 0;
   //move ship
   if(ship.thrusting){
-    
+    ship.x += ship.velocity.x;
+    ship.y -= ship.velocity.y;
   }
 }
 
@@ -74,18 +75,28 @@ function gameControls(){
   document.addEventListener('keydown', () => {
     switch (event.key) {
       case "ArrowUp":
-        //ship.y = ;
-        //ship.x = ;
+        let thrustDir = ship.angle + ship.rotation / 180 * Math.PI;
+        ship.thrusting = true;
+        if(ship.velocity.x < 5 && ship.velocity.y < 5){
+          ship.velocity.x += 5 * Math.cos(ship.angle);
+          ship.velocity.y += 5 * Math.sin(ship.angle);
+        }
+        else{
+          ship.velocity.x = ship.velocity.x * Math.cos(ship.angle);
+          ship.velocity.y = ship.velocity.y * Math.sin(ship.angle);
+        }
         break;
       case "ArrowLeft":
-      ship.rotation += 5;
+        ship.rotation += 5;
         break;
       case "ArrowRight":
-      ship.rotation -= 5;
+        ship.rotation -= 5;
         break;
       case " ":
       console.log("Shoot");
         break;
+      case "ArrowDown":
+        ship.thrusting = false;
       default:
         return;
     }
