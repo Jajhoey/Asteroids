@@ -2,9 +2,14 @@ const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const startButton = document.getElementById('start');
 const turn_speed = 360; //Degrees of rotation per second
+const friction = 0.7; //Coefficient of friction in space
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+const ship_speed = canvas.width / 300;
+
+
 
 const ship = {
   //Ship position
@@ -58,6 +63,14 @@ function drawShip() {
   if(ship.thrusting){
     ship.x += ship.velocity.x;
     ship.y -= ship.velocity.y;
+    //force of friction
+    ship.velocity.x -= friction * Math.cos(ship.angle);
+    ship.velocity.y -= friction * Math.sin(ship.angle);
+  }
+
+  if (!ship.thrusting){
+    ship.velocity.x = 0;
+    ship.velocity.y = 0;
   }
 }
 
@@ -75,22 +88,15 @@ function gameControls(){
   document.addEventListener('keydown', () => {
     switch (event.key) {
       case "ArrowUp":
-        let thrustDir = ship.angle + ship.rotation / 180 * Math.PI;
         ship.thrusting = true;
-        if(ship.velocity.x < 5 && ship.velocity.y < 5){
-          ship.velocity.x += 5 * Math.cos(ship.angle);
-          ship.velocity.y += 5 * Math.sin(ship.angle);
-        }
-        else{
-          ship.velocity.x = ship.velocity.x * Math.cos(ship.angle);
-          ship.velocity.y = ship.velocity.y * Math.sin(ship.angle);
-        }
+        ship.velocity.x += ship_speed * Math.cos(ship.angle);
+        ship.velocity.y += ship_speed * Math.sin(ship.angle);
         break;
       case "ArrowLeft":
-        ship.rotation += 5;
+        ship.rotation += turn_speed/60;
         break;
       case "ArrowRight":
-        ship.rotation -= 5;
+        ship.rotation -= turn_speed/60;
         break;
       case " ":
       console.log("Shoot");
@@ -105,7 +111,7 @@ function gameControls(){
 
 function startGame(){
   gameControls();
-  setInterval(update, 1000 / 60);
+  setInterval(update, 1000 / 60); //Fps is 160th
 }
 
 //displayInstructions();
