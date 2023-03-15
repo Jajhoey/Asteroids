@@ -18,6 +18,16 @@ canvas{
   background-color: black;
 }
 
+button{
+  background-color: #631414;
+  width: 10%;
+  height: 10%;
+  border: 2px solid black;
+  border-radius:
+  border-radius: 100px;
+  font-weight: bold;
+}
+
 .start{
   margin-top: 10px;
   display: flex;
