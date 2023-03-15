@@ -2,8 +2,9 @@ const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const startButton = document.getElementById('start');
 const turn_speed = 360; //Degrees of rotation per second
-const friction = 0.7; //Coefficient of friction
+const friction = 0.6; //Coefficient of friction
 const ship_acceleration = 10; //increase velocity by 5 pixels per second
+const numAsteroids = 3;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -15,7 +16,7 @@ const ship = {
   //Ship position
   x: canvas.width / 2,
   y: canvas.height / 2,
-  radius: 40,
+  radius: 30,
   //Angle is defaulted to 90 (facing north). Angle is converted to radians
   //for the trig functions to work.
   angle: 90/180 * Math.PI,
@@ -26,6 +27,7 @@ const ship = {
   rotation: 0,
   thrusting: false
 };
+
 
 function displayInstructions(){
   context.font = '50px Times New Roman';
@@ -40,6 +42,7 @@ function displayInstructions(){
 
 function drawShip() {
   context.strokeStyle = '#fafafa';
+  context.lineWidth = ship.radius / 15;
   context.beginPath();
   context.moveTo(//ship's nose
     ship.x + ship.radius * Math.cos(ship.angle),
@@ -54,9 +57,69 @@ function drawShip() {
     ship.y + ship.radius * (Math.sin(ship.angle) + Math.cos(ship.angle))
   );
   context.closePath(); //drawing back to the nose
+  context.fill();
   context.stroke();
 
   //drawing thrust
+  if (ship.thrusting) {
+    context.fillStyle = '#50d4c9';
+    context.strokeStyle = '#e88e2e';
+    context.lineWidth = ship.radius / 5;
+    context.beginPath();
+    context.moveTo(//tip of thrust
+      ship.x - 2 * ship.radius * Math.cos(ship.angle),
+      ship.y + 2 * ship.radius * Math.sin(ship.angle)
+    );
+    context.lineTo(//drawing to bottom left of ship
+      ship.x - ship.radius * (Math.cos(ship.angle) + Math.sin(ship.angle)/3),
+      ship.y + ship.radius * (Math.sin(ship.angle) - Math.cos(ship.angle)/3)
+    );
+    context.lineTo(//drawing to bottom right
+      ship.x - ship.radius * (Math.cos(ship.angle) - Math.sin(ship.angle)/3),
+      ship.y + ship.radius * (Math.sin(ship.angle) + Math.cos(ship.angle)/3)
+    );
+    context.closePath(); //drawing back to the tip of thrust
+    context.fill();
+    context.stroke();
+  }
+}
+
+function newAsteroid(){
+  const asteroid = {
+    x: Math.random(),
+    y: Math.random(),
+    radius: 40,
+    angle: 90/180 * Math.PI,
+    velocity: {
+      x: 0,
+      y: 0
+    },
+    rotation: 0,
+    vertices: 10 + Math.random() * 10
+  }
+  return asteroid;
+}
+
+function createAsteroids(){
+  let asteroids = [];
+
+  //pushing Asteroids
+  for (var i = 0; i < numAsteroids; i++){
+    ast = newAsteroid();
+    asteroids.push(ast);
+    context.fillStyle = 'white';
+    context.beginPath();
+    //drawing asteroids
+    for(var j = 0; j < ast.vertices; j++){
+      context.moveTo(ast.x - ast.radius * Math.cos(ast.angle), ast.y + ast.radius * Math.sin(ast.angle));
+      context.lineTo(
+        ast.x - ast.radius * Math.cos(ast.angle) / (ast.vertices - j),
+        ast.y + ast.radius * Math.sin(ast.angle) / (ast.vertices - j)
+      );
+    }
+    context.closePath();
+    context.stroke();
+  }
 
 }
 
@@ -100,6 +163,7 @@ function update() {
 
   clearCanvas();
   drawShip();
+  createAsteroids();
 }
 
 //Event handlers for game controls
@@ -140,10 +204,7 @@ document.addEventListener('keyup', () => {
 
 //debugging
 function test(){
-  console.log(ship.x);
-  console.log(ship.y);
-  console.log(ship.thrusting);
-  console.log(ship.rotation);
+
 }
 
 function startGame(){
