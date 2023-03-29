@@ -19,13 +19,17 @@ canvas{
 }
 
 button{
-  background-color: #631414;
+  background-color: darkgrey;
   width: 10%;
   height: 10%;
   border-radius: 5px;
   font-weight: bold;
   color: white;
 
+}
+
+.hidden{
+  display: none;
 }
 
 .start{
