@@ -617,4 +617,3 @@ retryButton.addEventListener('click', newGame);
 retryButton.addEventListener('click', () => {
   retryButton.classList.add('hidden');
 });
-startGame()
