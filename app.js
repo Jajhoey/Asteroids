@@ -4,8 +4,8 @@ const startButton = document.getElementById('start');
 const retryButton = document.getElementById('retry');
 retryButton.classList.add('hidden')
 
-const turn_speed = 1080; //Degrees of rotation per second
-const friction = 0.7; //Coefficient of friction
+const turn_speed = 360; //Degrees of rotation per second.
+const friction = 1; //Coefficient of friction
 const ship_acceleration = 20; //increase velocity by 20 pixels per second
 const rateOfFire = 3; // 3 shots per sec
 const bulletVel = 20; //pixels per sec
@@ -13,8 +13,7 @@ const FPS = 60;
 const explodeDur = 1; //explode for 1 sec
 const blinkDur = 3; //blink for 3 sec (invincibility)
 const levelDisplayDur = 2; //2 sec
-const restart = false;
-
+var gameIsOver = false;
 var numAsteroids = 3;
 var level = 0;
 var currentLives = 3;
@@ -24,8 +23,78 @@ var tAlpha = 0; //decrease this to fade out level display
 let lasers = [];
 let asteroids = [];
 
-canvas.width = window.innerWidth;
+canvas.width = window.innerWidth;      
 canvas.height = window.innerHeight;
+
+//sound effects
+const fxLaser = new Sound("sounds/laser.m4a", 2, 0.005);
+const fxExplode = new Sound("sounds/explode.m4a", 1, 0.05);
+const fxHit = new Sound("sounds/hit.m4a", 3, 0.05);
+const fxThrust = new Sound("sounds/thrust.m4a", 1, 0.05);
+
+//Making custom Sound class implementing Audio for playing multiple sounds at once
+function Sound(src, maxStreams = 1, vol = 1){
+  this.streamNum = 0;
+  this.streams = [];
+
+  for (var i = 0; i < maxStreams; i++){
+    this.streams.push(new Audio(src));
+    this.streams[i].volume = vol;
+
+  }
+
+  //this play function will add another stream of audio to Sound simultaneously 
+  this.play = function(){
+    this.streamNum = (this.streamNum + 1) % maxStreams; //Modulus is making sure every stream is played
+    this.streams[this.streamNum].play();
+  }
+
+  this.stop = function (){
+    this.streams[this.streamNum].pause();
+    this.streams[this.streamNum].currentTime = 0;
+  }
+}
+
+//Music will alternate bt a high and low sound 
+//using total asteroids to asterids left as the ratio for ticking
+var music = new Music("sounds/music-low.m4a", "sounds/music-high.m4a", 0.075);
+var astLeft, totalAst;
+
+//Implementing function for music
+function Music(srcLow, srcHigh, vol){
+  this.soundLow = new Audio(srcLow);
+  this.soundHigh = new Audio(srcHigh);
+
+  this.soundLow.volume = vol;
+  this.soundHigh.volume = vol;
+
+  this.low = true;
+  this.tempo = 1.0; //Beats per second
+  this.beatTime = 0; //frames until next beat
+
+  this.setRatio = function(ratio){
+    this.tempo = 1.0 - 0.75 * (1.0 - ratio);
+  }
+
+  this.play = function(){
+    if(this.low){
+      this.soundLow.play();
+    }else {
+      this.soundHigh.play();
+    }
+    this.low = !this.low;
+  }
+
+  this.tick = function(){
+    if (this.beatTime == 0){
+      this.play();
+      this.beatTime = Math.ceil(this.tempo * FPS);
+    }else {
+      this.beatTime--;
+    }
+  }
+
+}
 
 var ship = newShip();
 var shipLife = {
@@ -120,9 +189,12 @@ function drawShip(e, b) {
       context.closePath(); //drawing back to the tip of thrust
       context.fill();
       context.stroke();
-    }
+
+      fxThrust.play();
+    } 
   }else {
     drawExplode(ship.x, ship.y, ship.radius);
+    fxExplode.play();
   }
 }
 
@@ -181,9 +253,10 @@ function newLaser(x, y, a){
 }
 
 function createLasers(){
-  if (ship.firing && ship.explodeTime == 0) {
+  if (ship.firing && ship.explodeTime == 0 && currentLives > 0) {
     let laser = newLaser(ship.x, ship.y, ship.angle);
     lasers.push(laser);
+    fxLaser.play();
   }
 }
 
@@ -237,6 +310,8 @@ function newAsteroid(astDebris){
 function createAsteroids(){
   //initial creation of asteroids at start of level
   numAsteroids += level;
+  totalAst = numAsteroids * 7;
+  astLeft = totalAst;
 
   for (var i = 0; i < numAsteroids; i++){
     ast = newAsteroid(false);
@@ -255,6 +330,11 @@ function astExplode(ast){
      }
    }
   asteroids.splice(asteroids.indexOf(ast), 1);
+  fxHit.play();
+
+  astLeft--;
+  //if there are 0 asteroids left, then ratio is 1. Else, pass the actual ratio.
+  music.setRatio(astLeft == 0 ? 1 : astLeft/totalAst);
 }
 
 function drawLives(last){
@@ -335,6 +415,7 @@ function gameOver(){
     asteroids.splice(0, asteroids.length);
   }
 
+  gameIsOver = true;
   retryButton.classList.remove('hidden');
 }
 
@@ -412,11 +493,18 @@ var astExp = {
   r: 0,
   dur: 0
 }
+
+//list of currently pressed keys
+var controller = new Map();
+
 //this update function is the main game loop
 function update() {
   var isExploding = ship.explodeTime > 0;
   var blink = ship.blinkTime % 5 == 0; //this line is tied to the frequency of blinking. Ship will blink on multiples of 5
   var last = currentLives == 1;
+
+  //music ticking
+  music.tick();
   
   //rotate the ship and asteroids
   ship.angle += ship.rotation / 180 * Math.PI;
@@ -510,8 +598,6 @@ function update() {
   //draw asteroid explosion
   if (astExp.dur > 0) {
     
-    drawExplode(astExp.x, astExp.y, astExp.r);
-    console.log(astExp.x, astExp.y, astExp.r);
     astExp.dur--;
   }
 
@@ -533,8 +619,23 @@ function update() {
   clearCanvas();
 
   boundaryWarp();
-  
-  
+
+  //If the controller map has a key, check value and handle
+  if (controller.has('ArrowUp')) {
+    ship.thrusting = true;
+  } else {
+    ship.thrusting = false;
+  }
+
+  if (controller.has('ArrowLeft')) {
+    ship.rotation += turn_speed/FPS;
+  } 
+  else if (controller.has('ArrowRight')){
+    ship.rotation -= turn_speed/FPS; 
+  } else {
+    ship.rotation = 0;
+  }
+
   if(currentLives > 0){
     drawShip(isExploding, blink);
   }else{
@@ -549,63 +650,60 @@ function update() {
   tAlpha -= .01;
   //showBounds();
 }
+
 displayLevel();
 
-//Event handlers for game controls DEPRECIATED
-document.addEventListener('keydown', () => {
+//On an event, add key to the map as key and event as the value
+document.addEventListener('keydown', (event) => {
   switch (event.key) {
     case "ArrowUp":
-      ship.thrusting = true;
+      controller.set(event.key, event)
       break;
     case "ArrowLeft":
-      ship.rotation += turn_speed/FPS;
+      controller.set(event.key, event)
       break;
     case "ArrowRight":
-      ship.rotation -= turn_speed/FPS;
+      controller.set(event.key, event)
       break;
     case " ":
-      ship.firing = true;
-      break;
+      if (!gameIsOver) {
+        ship.firing = true;
+        
+      }
     default:
       return;
   }
 });
 
-document.addEventListener('keyup', () => {
-  switch (event.key) {
-    case 'ArrowUp':
-      ship.thrusting = false;
-      break;
-    case 'ArrowLeft':
-      ship.rotation = 0;
-      break;
-    case 'ArrowRight':
-      ship.rotation = 0;
-      break;
-    case " ":
-      ship.firing = false;
-      break;
-    default:
+//On keyup, input key is deleted from controller map
+document.addEventListener('keyup', (event) => {
+  if (event.key == " "){
+    ship.firing = false;
+  } else if (event.key == "ArrowUp"){
+    fxThrust.stop();
+  } 
 
-  }
+  controller.delete(event.key);
 });
 
 //debugging
 function test(){
-  //console.log('test');
 }
 
 function startGame(){
+  gameIsOver = false;
   setInterval(test, 1000);
   setInterval(update, 1000 / FPS); //Fps is 1/60th
   setInterval(createLasers, 1000 / rateOfFire);
 }
 
 function newGame(){
+  gameIsOver = false;
   numAsteroids = 3;
   level = 0;
   currentLives = 3;
   score = 0;
+  music.setRatio(1);
 }
 
 displayInstructions();
