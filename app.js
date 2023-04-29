@@ -32,7 +32,7 @@ const fxExplode = new Sound("sounds/explode.m4a", 1, 0.05);
 const fxHit = new Sound("sounds/hit.m4a", 3, 0.05);
 const fxThrust = new Sound("sounds/thrust.m4a", 1, 0.05);
 
-//Making custom Sound class implementing Audio for playing multiple sounds at once
+//Making custom Sound class implementing Audio for playing mult+iple sounds at once
 function Sound(src, maxStreams = 1, vol = 1){
   this.streamNum = 0;
   this.streams = [];
@@ -86,11 +86,13 @@ function Music(srcLow, srcHigh, vol){
   }
 
   this.tick = function(){
-    if (this.beatTime == 0){
-      this.play();
-      this.beatTime = Math.ceil(this.tempo * FPS);
-    }else {
-      this.beatTime--;
+    if (!gameIsOver){
+      if (this.beatTime == 0){
+        this.play();
+        this.beatTime = Math.ceil(this.tempo * FPS);
+      }else {
+        this.beatTime--;
+      }
     }
   }
 
